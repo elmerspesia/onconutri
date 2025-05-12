@@ -1,52 +1,45 @@
 from PIL import Image
 import numpy as np
 
-# COCO para alimentos adaptados
-COCO_TO_FOOD = {
-    37: "chicken",
-    41: "tomato",
-    56: "broccoli",
-    57: "carrot",
-    60: "doughnut",
-    61: "cake",
-    49: "orange",
-    46: "banana",
-    47: "apple",
-    48: "sandwich",
-    52: "hot dog",
-    53: "pizza",
-    44: "bottle",
-    0: "unknown"
+# Mapeamento manual (exemplo simplificado — ajustar conforme classes YOLOv8 treinado)
+YOLO_CLASS_TO_FOOD = {
+    0: "apple",
+    1: "banana",
+    2: "cake",
+    3: "chicken",
+    4: "fries",
+    5: "pizza",
+    6: "broccoli",
+    7: "carrot",
+    8: "hot dog",
+    9: "sandwich",
+    10: "orange",
+    11: "tomato",
+    12: "doughnut"
 }
 
-def preprocess_image(image):
-    return np.array(image)
-
-def identify_foods(image, predictor):
-    inputs = preprocess_image(image)
-    outputs = predictor(inputs)
-    instances = outputs["instances"].to("cpu")
-
-    masks = instances.pred_masks.numpy()
-    classes = instances.pred_classes.numpy()
-    scores = instances.scores.numpy()
+def identify_foods(image, model):
+    results = model.predict(source=np.array(image), save=False, verbose=False)
+    result = results[0]
 
     food_data = []
-    total_pixels = masks[0].size if masks.shape[0] > 0 else 1
+    total_pixels = image.width * image.height
 
-    for mask, cls_id, score in zip(masks, classes, scores):
-        food = COCO_TO_FOOD.get(cls_id, "unknown")
-        pixel_count = mask.sum()
-        percentage = pixel_count / total_pixels
-        food_data.append((food, percentage, score))
+    for box, mask, cls, conf in zip(result.boxes.xyxy, result.masks.data, result.boxes.cls, result.boxes.conf):
+        mask_np = mask.cpu().numpy().astype(np.uint8)
+        pixels = np.sum(mask_np)
+        percentage = pixels / total_pixels
+
+        label = YOLO_CLASS_TO_FOOD.get(int(cls), "unknown")
+        food_data.append((label, percentage, float(conf)))
 
     return food_data
 
-def process_uploaded_images(files, predictor):
+def process_uploaded_images(files, model):
     results = []
     for file in files:
         image = Image.open(file).convert("RGB")
-        food_items = identify_foods(image, predictor)
+        food_items = identify_foods(image, model)
         results.append({
             "filename": file.name,
             "foods": food_items,
