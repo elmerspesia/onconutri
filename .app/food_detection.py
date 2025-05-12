@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
 
-# Mapeamento manual (exemplo simplificado — ajustar conforme classes YOLOv8 treinado)
+# Ajuste para todos os alimentos do seu modelo (exemplo ampliável)
 YOLO_CLASS_TO_FOOD = {
     0: "apple",
     1: "banana",
@@ -25,6 +25,9 @@ def identify_foods(image, model):
     food_data = []
     total_pixels = image.width * image.height
 
+    if not hasattr(result, "boxes") or result.boxes is None:
+        return [("unknown", 1.0, 0.0)]
+
     for box, mask, cls, conf in zip(result.boxes.xyxy, result.masks.data, result.boxes.cls, result.boxes.conf):
         mask_np = mask.cpu().numpy().astype(np.uint8)
         pixels = np.sum(mask_np)
@@ -32,6 +35,9 @@ def identify_foods(image, model):
 
         label = YOLO_CLASS_TO_FOOD.get(int(cls), "unknown")
         food_data.append((label, percentage, float(conf)))
+
+    if not food_data:
+        food_data.append(("unknown", 1.0, 0.0))
 
     return food_data
 
