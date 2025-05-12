@@ -1,5 +1,5 @@
 import streamlit as st
-from model import setup_predictor
+from model import setup_model
 from food_detection import process_uploaded_images
 from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
 from recommendation import recommend_diet
