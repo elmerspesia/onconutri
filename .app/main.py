@@ -26,6 +26,14 @@ if uploaded_files:
             model = setup_model()
             food_compositions = process_uploaded_images(uploaded_files, model)
 
+        # Miniaturas em painel horizontal
+        st.subheader("🖼️ Painel de Miniaturas dos Pratos")
+        cols = st.columns(len(food_compositions))
+        for idx, col in enumerate(cols):
+            with col:
+                st.image(food_compositions[idx]["image"], caption=food_compositions[idx]["filename"], use_column_width=True)
+
+        # Detalhamento por prato
         st.subheader("📊 Composição Alimentar dos Pratos")
         for comp in food_compositions:
             st.image(comp["image"], caption=comp["filename"], use_container_width=True)
@@ -35,11 +43,13 @@ if uploaded_files:
             risk = calculate_cancer_risk(comp["foods"])
             st.markdown(f"**Risco estimado de câncer para este prato:** `{risk:.2f}`")
 
+        # Avaliação geral
         st.subheader("🧬 Avaliação Geral da Dieta")
         gain_years, avg_risk = estimate_lifespan_gain(food_compositions)
         st.write(f"**Risco médio de câncer na dieta:** `{avg_risk:.2f}`")
         st.write(f"**Estimativa de anos de vida adicionais com melhorias alimentares:** `{gain_years} anos`")
 
+        # Recomendações
         st.subheader("🥗 Recomendações Alimentares Personalizadas")
         suggestions = recommend_diet(food_compositions)
         if suggestions:
