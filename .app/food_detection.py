@@ -1,15 +1,11 @@
 from PIL import Image
 import numpy as np
 import torch
-from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
+from transformers import BlipProcessor, BlipForConditionalGeneration
 
-# BLIP para descrição de imagem (em inglês)
+# BLIP (image-to-text)
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
-
-# Tradutor para português
-translation_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-pt")
-translation_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-pt")
 
 @torch.no_grad()
 def describe_crop(crop_img: Image.Image) -> str:
@@ -18,10 +14,26 @@ def describe_crop(crop_img: Image.Image) -> str:
     caption = processor.decode(out[0], skip_special_tokens=True)
     return caption.strip()
 
+# Tradução local (evita uso de API externa)
 def translate_text(text):
-    tokens = translation_tokenizer(text, return_tensors="pt", padding=True, truncation=True)
-    translation = translation_model.generate(**tokens)
-    return translation_tokenizer.decode(translation[0], skip_special_tokens=True)
+    substitutions = {
+        "plate of food": "prato de comida",
+        "with": "com",
+        "shrimp": "camarão",
+        "meat": "carne",
+        "vegetables": "vegetais",
+        "a close up of": "uma imagem próxima de",
+        "bowl": "tigela",
+        "rice": "arroz",
+        "leaf": "folha",
+        "carrot": "cenoura",
+        "piece": "pedaço",
+        "and": "e",
+        "a": "um",
+    }
+    for eng, pt in substitutions.items():
+        text = text.replace(eng, pt)
+    return text
 
 def identify_foods(image: Image.Image, model):
     results = model.predict(source=np.array(image), save=False, verbose=False)
