@@ -4,37 +4,42 @@ from food_detection import process_uploaded_images
 from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
 from recommendation import recommend_diet
 
-st.set_page_config(page_title="Análise Nutricional & Prevenção de Câncer", layout="wide")
-st.title("🔍 Análise de Pratos e Riscos Nutricionais")
+st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
+st.title("🧬 Análise Nutricional de Risco Oncológico")
 
-st.write("Faça o upload de até 10 imagens de pratos de comida para:")
 st.markdown("""
+Faça o upload de até 30 imagens de pratos de comida para:
+
 - Identificar os ingredientes em cada prato
-- Calcular a composição alimentar percentual
-- Estimar o risco relativo de câncer
-- Obter recomendações alimentares personalizadas
-- Avaliar o impacto positivo na expectativa de vida
+- Calcular a composição percentual dos alimentos no prato
+- Estimar o risco relativo de câncer baseado na dieta
+- Obter recomendações alimentares personalizadas para redução de risco
+- Avaliar o impacto potencial sobre a expectativa de vida
 """)
 
-uploaded_files = st.file_uploader("📤 Upload de imagens (máx. 10)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "📤 Envie as imagens dos pratos (até 30 imagens)", 
+    type=["jpg", "jpeg", "png"], 
+    accept_multiple_files=True
+)
 
 if uploaded_files:
-    if len(uploaded_files) > 10:
-        st.warning("Limite máximo de 10 imagens.")
+    if len(uploaded_files) > 30:
+        st.warning("Limite máximo de 30 imagens excedido.")
     else:
-        with st.spinner("🔎 Processando imagens..."):
+        with st.spinner("🔍 Processando as imagens..."):
             model = setup_model()
             food_compositions = process_uploaded_images(uploaded_files, model)
 
-        # Miniaturas em painel horizontal
-        st.subheader("🖼️ Painel de Miniaturas dos Pratos")
-        cols = st.columns(len(food_compositions))
-        for idx, col in enumerate(cols):
-            with col:
-                st.image(food_compositions[idx]["image"], caption=food_compositions[idx]["filename"], use_column_width=True)
+        # Miniaturas
+        st.subheader("📷 Miniaturas dos Pratos Enviados")
+        cols = st.columns(min(len(food_compositions), 5))
+        for idx, comp in enumerate(food_compositions):
+            with cols[idx % len(cols)]:
+                st.image(comp["image"], caption=comp["filename"], use_column_width=True)
 
-        # Detalhamento por prato
-        st.subheader("📊 Composição Alimentar dos Pratos")
+        # Detalhes de cada prato
+        st.subheader("📊 Ingredientes Identificados nos Pratos")
         for comp in food_compositions:
             st.image(comp["image"], caption=comp["filename"], use_container_width=True)
             st.markdown("**Ingredientes identificados:**")
@@ -46,8 +51,8 @@ if uploaded_files:
         # Avaliação geral
         st.subheader("🧬 Avaliação Geral da Dieta")
         gain_years, avg_risk = estimate_lifespan_gain(food_compositions)
-        st.write(f"**Risco médio de câncer na dieta:** `{avg_risk:.2f}`")
-        st.write(f"**Estimativa de anos de vida adicionais com melhorias alimentares:** `{gain_years} anos`")
+        st.write(f"**Risco médio estimado de câncer baseado na dieta:** `{avg_risk:.2f}`")
+        st.write(f"**Potencial de aumento na expectativa de vida com dieta otimizada:** `{gain_years} anos`")
 
         # Recomendações
         st.subheader("🥗 Recomendações Alimentares Personalizadas")
