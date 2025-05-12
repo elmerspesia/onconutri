@@ -1,11 +1,11 @@
 streamlit>=1.25.0
-torch==2.0.1+cpu
-torchvision==0.15.2+cpu
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
 Pillow
 numpy
 pyyaml
 opencv-python-headless
 
-# Detectron2 wheel pré-compilado compatível com torch+cpu
-https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch2.0/index.html
+-f https://download.pytorch.org/whl/torch_stable.html
+https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch2.1/index.html
 detectron2==0.6
