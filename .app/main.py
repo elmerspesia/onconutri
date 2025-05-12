@@ -23,7 +23,7 @@ if uploaded_files:
         st.warning("Limite máximo de 10 imagens.")
     else:
         with st.spinner("🔎 Processando imagens..."):
-            predictor = setup_predictor()
+           model = setup_model()
             food_compositions = process_uploaded_images(uploaded_files, predictor)
         
         st.subheader("📊 Composição Alimentar dos Pratos")
