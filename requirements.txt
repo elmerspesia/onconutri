@@ -1,8 +1,11 @@
 streamlit>=1.25.0
-torch==2.0.1
-torchvision==0.15.2
-numpy
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
 Pillow
-opencv-python-headless
+numpy
 pyyaml
-git+https://github.com/facebookresearch/detectron2.git#egg=detectron2
+opencv-python-headless
+
+# Detectron2 wheel pré-compilado compatível com torch+cpu
+https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch2.0/index.html
+detectron2==0.6
