@@ -1,12 +1,15 @@
 from PIL import Image
 import numpy as np
 import torch
-from transformers import BlipProcessor, BlipForConditionalGeneration
-from io import BytesIO
+from transformers import BlipProcessor, BlipForConditionalGeneration, MarianMTModel, MarianTokenizer
 
-# BLIP (image-to-text)
+# BLIP para descrição de imagem (em inglês)
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+
+# Tradutor para português
+translation_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-pt")
+translation_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-pt")
 
 @torch.no_grad()
 def describe_crop(crop_img: Image.Image) -> str:
@@ -14,6 +17,11 @@ def describe_crop(crop_img: Image.Image) -> str:
     out = blip_model.generate(**inputs)
     caption = processor.decode(out[0], skip_special_tokens=True)
     return caption.strip()
+
+def translate_text(text):
+    tokens = translation_tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+    translation = translation_model.generate(**tokens)
+    return translation_tokenizer.decode(translation[0], skip_special_tokens=True)
 
 def identify_foods(image: Image.Image, model):
     results = model.predict(source=np.array(image), save=False, verbose=False)
@@ -30,12 +38,11 @@ def identify_foods(image: Image.Image, model):
         pixels = np.sum(mask_np)
         percentage = pixels / total_pixels
 
-        # Extrair região da imagem (bounding box)
         x1, y1, x2, y2 = map(int, box.tolist())
         cropped = image.crop((x1, y1, x2, y2))
 
-        # IA generativa para legenda do crop
-        label = describe_crop(cropped)
+        caption = describe_crop(cropped)
+        label = translate_text(caption)
 
         food_data.append((label, percentage, float(conf)))
 
