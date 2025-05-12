@@ -23,11 +23,10 @@ if uploaded_files:
         st.warning("Limite máximo de 10 imagens.")
     else:
         with st.spinner("🔎 Processando imagens..."):
-           model = setup_model()
-            food_compositions = process_uploaded_images(uploaded_files, predictor)
-        
-        st.subheader("📊 Composição Alimentar dos Pratos")
+            model = setup_model()
+            food_compositions = process_uploaded_images(uploaded_files, model)
 
+        st.subheader("📊 Composição Alimentar dos Pratos")
         for comp in food_compositions:
             st.image(comp["image"], caption=comp["filename"], use_container_width=True)
             st.markdown("**Ingredientes identificados:**")
