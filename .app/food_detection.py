@@ -1,24 +1,21 @@
 from PIL import Image
 import numpy as np
+import torch
+from transformers import BlipProcessor, BlipForConditionalGeneration
+from io import BytesIO
 
-# Ajuste para todos os alimentos do seu modelo (exemplo ampliável)
-YOLO_CLASS_TO_FOOD = {
-    0: "apple",
-    1: "banana",
-    2: "cake",
-    3: "chicken",
-    4: "fries",
-    5: "pizza",
-    6: "broccoli",
-    7: "carrot",
-    8: "hot dog",
-    9: "sandwich",
-    10: "orange",
-    11: "tomato",
-    12: "doughnut"
-}
+# BLIP (image-to-text)
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
-def identify_foods(image, model):
+@torch.no_grad()
+def describe_crop(crop_img: Image.Image) -> str:
+    inputs = processor(images=crop_img, return_tensors="pt")
+    out = blip_model.generate(**inputs)
+    caption = processor.decode(out[0], skip_special_tokens=True)
+    return caption.strip()
+
+def identify_foods(image: Image.Image, model):
     results = model.predict(source=np.array(image), save=False, verbose=False)
     result = results[0]
 
@@ -26,18 +23,24 @@ def identify_foods(image, model):
     total_pixels = image.width * image.height
 
     if not hasattr(result, "boxes") or result.boxes is None:
-        return [("unknown", 1.0, 0.0)]
+        return [("não identificado", 1.0, 0.0)]
 
-    for box, mask, cls, conf in zip(result.boxes.xyxy, result.masks.data, result.boxes.cls, result.boxes.conf):
+    for mask, box, conf in zip(result.masks.data, result.boxes.xyxy, result.boxes.conf):
         mask_np = mask.cpu().numpy().astype(np.uint8)
         pixels = np.sum(mask_np)
         percentage = pixels / total_pixels
 
-        label = YOLO_CLASS_TO_FOOD.get(int(cls), "unknown")
+        # Extrair região da imagem (bounding box)
+        x1, y1, x2, y2 = map(int, box.tolist())
+        cropped = image.crop((x1, y1, x2, y2))
+
+        # IA generativa para legenda do crop
+        label = describe_crop(cropped)
+
         food_data.append((label, percentage, float(conf)))
 
     if not food_data:
-        food_data.append(("unknown", 1.0, 0.0))
+        food_data.append(("não identificado", 1.0, 0.0))
 
     return food_data
 
