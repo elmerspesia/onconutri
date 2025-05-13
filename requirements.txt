@@ -10,3 +10,5 @@ Pillow
 numpy
 pyyaml
 pandas
+graphviz
+
