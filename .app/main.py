@@ -36,7 +36,8 @@ if not st.session_state['autenticado']:
 menu = st.sidebar.selectbox("📚 Menu", [
     "Tela Principal",
     "Ranking de Risco Nutricional",
-    "Consulta Oncológica"
+    "Consulta Oncológica",
+    "Bot"
 ])
 
 # Página: Ranking
@@ -49,6 +50,12 @@ if menu == "Ranking de Risco Nutricional":
 if menu == "Consulta Oncológica":
     from consulta_oncologica import show_form
     show_form()
+    st.stop()
+
+# Página: Bot interativo
+if menu == "Bot":
+    from chatbot import show_bot
+    show_bot()
     st.stop()
 
 # Página: Tela Principal
@@ -105,17 +112,4 @@ if uploaded_files:
 
         st.subheader("📅 Dieta Semanal Sugerida")
         matriz = gerar_matriz_dieta(alimentos_gerais)
-
-        # ✅ Mapa mental dos benefícios da dieta saudável
-        st.subheader("🧠 Benefícios da Dieta Recomendada")
-        from graphviz import Digraph
-        g = Digraph()
-        g.node("Dieta Saudável")
-        g.edge("Dieta Saudável", "Redução de inflamações")
-        g.edge("Dieta Saudável", "Melhoria da imunidade")
-        g.edge("Dieta Saudável", "Redução do risco de câncer")
-        g.edge("Dieta Saudável", "Controle de peso")
-        g.edge("Dieta Saudável", "Saúde cardiovascular")
-        st.graphviz_chart(g)
-
         st.dataframe(matriz, use_container_width=True)
