@@ -1,11 +1,17 @@
 import streamlit as st
+from model import setup_model
+from food_detection import process_uploaded_images
+from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
+from recommendation import recommend_diet, gerar_matriz_dieta
+
+# Deve ser a PRIMEIRA instrução Streamlit do script
+st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
 
 # Função de login
 def login_screen():
-    st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="centered")
     st.title("🔐 Análise Nutricional de Risco Oncológico")
     st.subheader("Por favor, entre com suas credenciais")
-    
+
     with st.form("login_form"):
         usuario = st.text_input("Usuário")
         senha = st.text_input("Senha", type="password")
@@ -14,10 +20,11 @@ def login_screen():
         if submitted:
             if usuario == "spesia123" and senha == "spesia123":
                 st.session_state['autenticado'] = True
+                st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
-# Executa o login apenas se necessário
+# Controle de sessão
 if 'autenticado' not in st.session_state:
     st.session_state['autenticado'] = False
 
@@ -25,23 +32,16 @@ if not st.session_state['autenticado']:
     login_screen()
     st.stop()
 
-# Menu de navegação
+# Menu lateral
 menu = st.sidebar.selectbox("📚 Menu", ["Tela Principal", "Ranking de Risco Nutricional"])
 
+# Tela alternativa: Ranking
 if menu == "Ranking de Risco Nutricional":
     from risco_alimentos import show_ranking
     show_ranking()
     st.stop()
 
-
-
-import streamlit as st
-from model import setup_model
-from food_detection import process_uploaded_images
-from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
-from recommendation import recommend_diet, gerar_matriz_dieta
-
-st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
+# --------- TELA PRINCIPAL ----------
 st.title("🧬 Análise Nutricional de Risco Oncológico")
 
 st.markdown("""
