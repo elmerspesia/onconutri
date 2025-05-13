@@ -4,7 +4,7 @@ from food_detection import process_uploaded_images
 from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
 from recommendation import recommend_diet, gerar_matriz_dieta
 
-# Deve ser a PRIMEIRA instrução Streamlit do script
+# A primeira chamada obrigatória
 st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
 
 # Função de login
@@ -33,15 +33,25 @@ if not st.session_state['autenticado']:
     st.stop()
 
 # Menu lateral
-menu = st.sidebar.selectbox("📚 Menu", ["Tela Principal", "Ranking de Risco Nutricional"])
+menu = st.sidebar.selectbox("📚 Menu", [
+    "Tela Principal",
+    "Ranking de Risco Nutricional",
+    "Consulta Oncológica"
+])
 
-# Tela alternativa: Ranking
+# Página: Ranking
 if menu == "Ranking de Risco Nutricional":
     from risco_alimentos import show_ranking
     show_ranking()
     st.stop()
 
-# --------- TELA PRINCIPAL ----------
+# Página: Consulta Oncológica
+if menu == "Consulta Oncológica":
+    from consulta_oncologica import show_form
+    show_form()
+    st.stop()
+
+# Página: Tela Principal (análise de dieta)
 st.title("🧬 Análise Nutricional de Risco Oncológico")
 
 st.markdown("""
