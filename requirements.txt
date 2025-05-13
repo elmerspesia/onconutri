@@ -4,3 +4,4 @@ torch
 pandas
 Pillow
 graphviz
+ultralytics
