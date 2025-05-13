@@ -2,13 +2,14 @@ from PIL import Image
 import numpy as np
 import torch
 from transformers import BlipProcessor, BlipForConditionalGeneration
+import pandas as pd
 
-# Modelos
+# Carrega o modelo BLIP
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
-# Dicionário de mapeamento de alimentos para classes padronizadas (expansível)
-ALIMENTO_PADRAO = {
+# Mapeamento de alimentos e classificação
+ALIMENTO_CLASSIFICACAO = {
     "carrot": "cenoura",
     "rice": "arroz",
     "beans": "feijão",
@@ -22,54 +23,54 @@ ALIMENTO_PADRAO = {
     "salad": "salada",
     "french fries": "batata frita",
     "bread": "pão",
-    "pasta": "macarrão"
+    "pasta": "macarrão",
+    "hamburger": "hambúrguer",
+    "hot dog": "salsicha",
+    "donut": "rosquinha",
+    "pizza": "pizza",
+    "chips": "batata chips"
+}
+
+CLASSIFICACAO_TIPO = {
+    "cenoura": "natural",
+    "arroz": "natural",
+    "feijão": "natural",
+    "alface": "natural",
+    "tomate": "natural",
+    "frango": "natural",
+    "carne bovina": "natural",
+    "carne suína": "natural",
+    "peixe": "natural",
+    "ovo": "natural",
+    "salada": "natural",
+    "pão": "processado",
+    "macarrão": "processado",
+    "batata frita": "ultraprocessado",
+    "salsicha": "ultraprocessado",
+    "hambúrguer": "ultraprocessado",
+    "rosquinha": "ultraprocessado",
+    "pizza": "ultraprocessado",
+    "batata chips": "ultraprocessado"
 }
 
 @torch.no_grad()
-def describe_crop(crop_img: Image.Image) -> str:
-    inputs = processor(images=crop_img, return_tensors="pt")
+def describe_image(img: Image.Image) -> str:
+    inputs = processor(images=img, return_tensors="pt")
     out = blip_model.generate(**inputs)
     caption = processor.decode(out[0], skip_special_tokens=True).lower()
     return caption
 
-def padronizar_alimento(descricao):
-    for chave, valor in ALIMENTO_PADRAO.items():
-        if chave in descricao:
-            return valor
-    return descricao  # mantém original se não mapear
+def identificar_alimentos(imagens):
+    resultados = []
 
-def identify_foods(image: Image.Image, model):
-    results = model.predict(source=np.array(image), save=False, verbose=False)
-    result = results[0]
+    for imagem in imagens:
+        legenda = describe_image(imagem)
+        for palavra_en, alimento_pt in ALIMENTO_CLASSIFICACAO.items():
+            if palavra_en in legenda:
+                resultados.append({
+                    "Alimento": alimento_pt,
+                    "Classificação": CLASSIFICACAO_TIPO.get(alimento_pt, "desconhecido"),
+                    "Legenda Detectada": legenda
+                })
 
-    food_data = []
-    total_pixels = image.width * image.height
-
-    if not hasattr(result, "boxes") or result.boxes is None:
-        return [("não identificado", 1.0, 0.0)]
-
-    for mask, box, conf in zip(result.masks.data, result.boxes.xyxy, result.boxes.conf):
-        pixels = np.sum(mask.cpu().numpy())
-        percent = pixels / total_pixels
-
-        x1, y1, x2, y2 = map(int, box.tolist())
-        cropped = image.crop((x1, y1, x2, y2))
-
-        descricao = describe_crop(cropped)
-        alimento = padronizar_alimento(descricao)
-
-        food_data.append((alimento, percent, float(conf)))
-
-    return food_data
-
-def process_uploaded_images(files, model):
-    results = []
-    for file in files:
-        image = Image.open(file).convert("RGB")
-        food_items = identify_foods(image, model)
-        results.append({
-            "filename": file.name,
-            "foods": food_items,
-            "image": image
-        })
-    return results
+    return pd.DataFrame(resultados)
