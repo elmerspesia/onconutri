@@ -1,19 +1,23 @@
 import pandas as pd
+import streamlit as st
 
-def calcular_score(df_alimentos):
-    pesos = {
-        "natural": 0,
-        "processado": 1,
-        "ultraprocessado": 3
-    }
-    df_alimentos["Peso"] = df_alimentos["Classificação"].map(pesos)
-    score = df_alimentos["Peso"].sum()
-    return score / max(1, len(df_alimentos))
+def show_ranking():
+    st.title("📈 Ranking de Alimentos Industrializados e Riscos Oncológicos")
 
-def classificar_risco(score):
-    if score < 0.5:
-        return "Baixo"
-    elif score < 1.5:
-        return "Moderado"
-    else:
-        return "Alto"
+    dados = [
+        {"Alimento Industrializado": "Salsicha", "Tipo de Câncer Associado": "Colorretal"},
+        {"Alimento Industrializado": "Presunto", "Tipo de Câncer Associado": "Estômago"},
+        {"Alimento Industrializado": "Mortadela", "Tipo de Câncer Associado": "Esôfago"},
+        {"Alimento Industrializado": "Refrigerante", "Tipo de Câncer Associado": "Pâncreas"},
+        {"Alimento Industrializado": "Batata frita de pacote", "Tipo de Câncer Associado": "Mama"},
+        {"Alimento Industrializado": "Bolacha recheada", "Tipo de Câncer Associado": "Colorretal"},
+        {"Alimento Industrializado": "Cereais açucarados", "Tipo de Câncer Associado": "Fígado"},
+        {"Alimento Industrializado": "Nuggets de frango", "Tipo de Câncer Associado": "Próstata"},
+        {"Alimento Industrializado": "Macarrão instantâneo", "Tipo de Câncer Associado": "Estômago"},
+        {"Alimento Industrializado": "Bacon", "Tipo de Câncer Associado": "Colorretal"},
+        {"Alimento Industrializado": "Embutidos (geral)", "Tipo de Câncer Associado": "Colorretal"},
+        {"Alimento Industrializado": "Alimentos com corantes artificiais", "Tipo de Câncer Associado": "Vários tipos"},
+    ]
+
+    df = pd.DataFrame(dados)
+    st.dataframe(df, use_container_width=True)
