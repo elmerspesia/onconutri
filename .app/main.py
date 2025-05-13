@@ -4,7 +4,7 @@ from food_detection import process_uploaded_images
 from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
 from recommendation import recommend_diet, gerar_matriz_dieta
 
-# A primeira chamada obrigatória
+# Primeira instrução obrigatória
 st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
 
 # Função de login
@@ -45,13 +45,13 @@ if menu == "Ranking de Risco Nutricional":
     show_ranking()
     st.stop()
 
-# Página: Consulta Oncológica
+# Página: Consulta Médica Oncológica
 if menu == "Consulta Oncológica":
     from consulta_oncologica import show_form
     show_form()
     st.stop()
 
-# Página: Tela Principal (análise de dieta)
+# Página: Tela Principal
 st.title("🧬 Análise Nutricional de Risco Oncológico")
 
 st.markdown("""
