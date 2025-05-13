@@ -15,19 +15,22 @@ if uploaded_files:
     imagens = [Image.open(BytesIO(file.read())) for file in uploaded_files]
     df_alimentos = identificar_alimentos(imagens)
 
-    st.subheader("🍽️ Alimentos Identificados")
-    st.dataframe(df_alimentos)
+    if df_alimentos.empty:
+        st.warning("Nenhum alimento reconhecido nas imagens enviadas. Tente novamente com outras imagens.")
+    else:
+        st.subheader("🍽️ Alimentos Identificados")
+        st.dataframe(df_alimentos)
 
-    score = calcular_score(df_alimentos)
-    risco = classificar_risco(score)
+        score = calcular_score(df_alimentos)
+        risco = classificar_risco(score)
 
-    st.subheader("🎯 Score de Propensão ao Câncer")
-    st.metric("Score", f"{score:.2f}")
-    st.write(f"Nível de risco: **{risco}**")
+        st.subheader("🎯 Score de Propensão ao Câncer")
+        st.metric("Score", f"{score:.2f}")
+        st.write(f"Nível de risco: **{risco}**")
 
-    st.subheader("🥗 Dieta Recomendada")
-    dieta_df = gerar_dieta(df_alimentos)
-    st.dataframe(dieta_df)
+        st.subheader("🥗 Dieta Recomendada")
+        dieta_df = gerar_dieta(df_alimentos)
+        st.dataframe(dieta_df)
 
-    st.subheader("🧠 Benefícios da Nova Dieta (Mapa Mental)")
-    mapa_beneficios()
+        st.subheader("🧠 Benefícios da Nova Dieta (Mapa Mental)")
+        mapa_beneficios()
