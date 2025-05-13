@@ -46,11 +46,11 @@ def montar_prompt_ia(dados):
     respostas_texto = "\n".join([f"- {chave.replace('_', ' ').capitalize()}: {valor}" for chave, valor in dados.items()])
 
     prompt = (
-        "You is an oncologist specialized in oncogenital prevention. "
-        "Analyzes the patient profile using the bases of the OMS, INCA and healthcare literature. "
-        "Identifies risk-related risk variants, identifying dangerous types of cancer. "
-        "Responds with a clear and accessible Portuguese.\n\n"
-        "Patient profile:\n"
+        "Você é um oncologista especializado em prevenção oncogenital. "
+        "Analisa o perfil do paciente utilizando as bases da OMS, INCA e literatura da área da saúde. "
+        "Identifica variantes de risco relacionadas ao risco, identificando tipos perigosos de câncer. "
+        "Responde com um português claro e acessível.\n\n"
+        "Perfil do paciente:\n"
         f"{respostas_texto}"
     )
     return prompt
