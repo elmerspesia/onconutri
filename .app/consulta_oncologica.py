@@ -5,30 +5,60 @@ from transformers import pipeline
 def load_generator():
     return pipeline("text2text-generation", model="google/flan-t5-base")
 
-def gerar_diagnostico_ia(prompt):
+def calcular_score(dados):
+    score = 0
+    pesos = {
+        "frequencia_alimentar": {"Alta": 0.3, "Média": 0.15, "Baixa": 0.0},
+        "historico_familiar": {
+            "Sim - parentes de 1º grau": 0.3,
+            "Sim - parentes de 2º grau": 0.15,
+            "Não": 0.0
+        },
+        "tipo_dieta": {
+            "Industrializada": 0.2,
+            "Balanceada": 0.05,
+            "Vegetariana": 0.0,
+            "Outros": 0.1
+        },
+        "atividade_fisica": {
+            "Sedentário": 0.2,
+            "Moderado": 0.1,
+            "Ativo": 0.0
+        },
+        "exposicao_toxinas": {
+            "Alta": 0.2,
+            "Moderada": 0.1,
+            "Nenhuma": 0.0
+        },
+        "nivel_estresse": {
+            "Alto": 0.1,
+            "Médio": 0.05,
+            "Baixo": 0.0
+        }
+    }
+
+    for fator, valor in dados.items():
+        score += pesos.get(fator, {}).get(valor, 0)
+
+    return round(min(score, 1.0), 2)
+
+def montar_prompt_ia(dados):
+    respostas_texto = "\n".join([f"- {chave.replace('_', ' ').capitalize()}: {valor}" for chave, valor in dados.items()])
+
+    prompt = (
+        "You is an oncologist specialized in oncogenital prevention. "
+        "Analyzes the patient profile using the bases of the OMS, INCA and healthcare literature. "
+        "Identifies risk-related risk variants, identifying dangerous types of cancer. "
+        "Responds with a clear and accessible Portuguese.\n\n"
+        "Patient profile:\n"
+        f"{respostas_texto}"
+    )
+    return prompt
+
+def gerar_resposta_ia(prompt):
     generator = load_generator()
     resposta = generator(prompt, max_length=512, do_sample=True)
     return resposta[0]['generated_text']
-
-def montar_prompt(dados):
-    prompt = f"""
-Você é um médico oncologista especialista em prevenção de câncer. Analise o perfil do paciente abaixo com base em diretrizes científicas da OMS, INCA e literatura médica.
-
-Perfil do paciente:
-- Frequência alimentar: {dados['frequencia_alimentar']}
-- Histórico familiar de câncer: {dados['historico_familiar']}
-- Tipo de dieta: {dados['tipo_dieta']}
-- Atividade física: {dados['atividade_fisica']}
-- Exposição a toxinas: {dados['exposicao_toxinas']}
-- Estresse diário: {dados['nivel_estresse']}
-
-Com base nessas informações:
-1. Calcule um score de risco de câncer (de 0.00 a 1.00).
-2. Identifique possíveis tipos de câncer de risco elevado.
-3. Forneça um diagnóstico preventivo e recomendações de mudança de estilo de vida para reduzir o risco.
-Responda em português claro e acessível.
-"""
-    return prompt
 
 def show_form():
     st.header("🧬 Formulário de Consulta")
@@ -50,21 +80,13 @@ def show_form():
                 "exposicao_toxinas": exposicao_toxinas,
                 "nivel_estresse": nivel_estresse
             }
-            prompt = montar_prompt(dados)
-            resposta = gerar_diagnostico_ia(prompt)
+
+            score = calcular_score(dados)
+            prompt = montar_prompt_ia(dados)
+            resposta_ia = gerar_resposta_ia(prompt)
 
             st.success("✅ Consulta processada com sucesso.")
-
             st.subheader("📝 Resultado da Consulta Oncológica")
-
-            # Score fictício extraído da IA (seria ideal extrair com expressão regular)
-            score = "0.00"
-            if "0." in resposta or "1.0" in resposta:
-                import re
-                encontrados = re.findall(r"\b0\.\d{2}|\b1\.00", resposta)
-                if encontrados:
-                    score = encontrados[0]
-
             st.markdown(f"📊 **Score de Propensão ao Câncer:** `{score}`")
             st.markdown("📄 **Diagnóstico e Recomendação:**")
-            st.write(resposta)
+            st.write(resposta_ia)
