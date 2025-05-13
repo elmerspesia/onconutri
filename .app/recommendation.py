@@ -1,42 +1,23 @@
-from collections import Counter, defaultdict
+import pandas as pd
+from random import choice
 
-SUBSTITUTIONS = {
-    "processed_meat": ["legumes", "tofu", "grilled chicken"],
-    "fried_foods": ["baked potatoes", "steamed vegetables"],
-    "sugary_foods": ["fruits", "unsweetened yogurt"],
-    "red_meat": ["white_meat", "fish"],
-    "unknown": ["vegetables", "fruits"]
+# Exemplos por categoria (expansível)
+RECEITAS_SAUDAVEIS = {
+    "café": ["Iogurte com frutas", "Pão integral com ovo", "Smoothie verde"],
+    "almoço": ["Salada com grão-de-bico", "Peixe grelhado com arroz integral", "Frango com legumes"],
+    "jantar": ["Sopa de legumes", "Omelete com espinafre", "Macarrão integral com legumes"]
 }
 
-CATEGORY_LABELS = {
-    "processed_meat": ["pizza", "hot dog", "sandwich"],
-    "fried_foods": ["fries"],
-    "sugary_foods": ["cake", "doughnut"],
-    "red_meat": ["steak", "beef"],
-    "white_meat": ["chicken"],
-    "vegetables": ["broccoli", "carrot", "tomato"],
-    "fruits": ["apple", "banana", "orange"],
-    "whole_grains": ["oats", "brown rice", "quinoa"],
-    "legumes": ["lentils", "beans"],
-    "fish": ["salmon", "tuna"]
-}
+def gerar_matriz_dieta(alimentos):
+    dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+    matriz = []
 
-def recommend_diet(food_compositions):
-    food_counter = Counter()
+    for dia in dias:
+        matriz.append({
+            "Dia": dia,
+            "Café da manhã": choice(RECEITAS_SAUDAVEIS["café"]),
+            "Almoço": choice(RECEITAS_SAUDAVEIS["almoço"]),
+            "Jantar": choice(RECEITAS_SAUDAVEIS["jantar"])
+        })
 
-    for comp in food_compositions:
-        for food, _, _ in comp["foods"]:
-            for category, members in CATEGORY_LABELS.items():
-                if food in members:
-                    food_counter[category] += 1
-                    break
-
-    recommendations = defaultdict(list)
-    for category, count in food_counter.items():
-        if category in SUBSTITUTIONS:
-            recommendations[category] = {
-                "current_count": count,
-                "suggested_replacements": SUBSTITUTIONS[category]
-            }
-
-    return recommendations
+    return pd.DataFrame(matriz)
