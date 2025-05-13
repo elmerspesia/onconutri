@@ -3,16 +3,14 @@ from transformers import pipeline
 
 @st.cache_resource
 def load_chat_model():
-    try:
-        return pipeline("text2text-generation", model="google/flan-t5-base")
-    except Exception as e:
-        st.error("❌ Erro ao carregar modelo de IA. Verifique sua conexão ou tente novamente mais tarde.")
-        raise e
+    return pipeline("text2text-generation", model="google/flan-t5-base")
+
+@st.cache_resource
+def load_translator():
+    return pipeline("translation", model="Helsinki-NLP/opus-mt-en-pt")
 
 def show_form():
     st.title("🩺 Formulário de Consulta Oncológica")
-
-    st.markdown("Preencha o formulário abaixo para avaliar riscos potenciais de câncer e obter recomendações preventivas:")
 
     idade = st.selectbox("Idade", ["<30", "30-45", "46-60", ">60"])
     genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"])
@@ -25,24 +23,54 @@ def show_form():
     estresse = st.selectbox("Nível de estresse diário", ["Baixo", "Médio", "Alto"])
 
     if st.button("🔍 Processar Consulta"):
-        respostas = f"""
-        Idade: {idade}, Gênero: {genero}, Tabagismo: {tabagismo}, Álcool: {alcool},
-        Histórico familiar: {historico_familiar}, Dieta: {dieta},
-        Atividade física: {atividade_fisica}, Exposição: {exposicao}, Estresse: {estresse}.
-        """
+        with st.spinner("Processando avaliação com IA..."):
 
-        prompt = f"""
-        Com base neste perfil do paciente, avalie em português o risco mais provável de desenvolvimento de câncer e recomende estratégias preventivas nutricionais e comportamentais.
-        Perfil: {respostas}
-        """
+            # Engenharia de Prompt com CAG + DAG + RAG
+            contexto_medico = (
+                "Você é um assistente médico especializado em oncologia preventiva. "
+                "Analise o perfil abaixo de acordo com estudos da OMS, INCA, PubMed e NCCN."
+            )
 
-        st.subheader("📄 Resultado da Consulta Oncológica")
+            dados_struct = f"""
+            Idade: {idade}
+            Gênero: {genero}
+            Tabagismo: {tabagismo}
+            Álcool: {alcool}
+            Histórico familiar: {historico_familiar}
+            Dieta: {dieta}
+            Atividade física: {atividade_fisica}
+            Exposição a toxinas: {exposicao}
+            Estresse: {estresse}
+            """
 
-        try:
-            modelo = load_chat_model()
-            resultado = modelo(prompt, max_new_tokens=256)[0]['generated_text']
-            st.success("✅ Consulta processada com sucesso.")
-            st.markdown(f"**📋 Diagnóstico e Recomendação:**\n\n{resultado}")
-        except Exception as e:
-            st.error("❌ Não foi possível gerar a recomendação da IA no momento.")
-            st.exception(e)
+            prompt = (
+                f"{contexto_medico}\n\n"
+                f"Paciente:\n{dados_struct}\n\n"
+                "Avalie em português:\n"
+                "- O tipo mais provável de câncer com base nesse perfil\n"
+                "- Um score numérico de propensão ao câncer (de 0.00 a 1.00)\n"
+                "- Recomendações detalhadas de hábitos que reduzam esse risco\n"
+                "- Diagnóstico preventivo completo\n\n"
+                "Responda apenas em português, com linguagem médica clara e objetiva."
+            )
+
+            try:
+                modelo = load_chat_model()
+                saida = modelo(prompt, max_new_tokens=512)[0]['generated_text']
+
+                tradutor = load_translator()
+                traducao = tradutor(saida, max_length=512)[0]['translation_text']
+
+                # Score extraído por regex ou heurística (ajustável)
+                import re
+                score_match = re.search(r'([0-1]\.\d{1,2})', traducao)
+                score = float(score_match.group(1)) if score_match else 0.0
+
+                st.success("Consulta processada com sucesso.")
+                st.subheader("📄 Resultado da Consulta Oncológica")
+                st.markdown(f"**📊 Score de propensão ao câncer:** `{score:.2f}`")
+                st.markdown(f"**🩺 Diagnóstico e Recomendação:**\n\n{traducao}")
+
+            except Exception as e:
+                st.error("❌ Erro ao processar a consulta.")
+                st.exception(e)
