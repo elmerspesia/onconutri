@@ -3,13 +3,16 @@ from transformers import pipeline
 
 @st.cache_resource
 def load_chat_model():
-    # Modelo mais leve e rápido (não precisa de API key)
-    return pipeline("text2text-generation", model="google/flan-t5-large")
+    try:
+        return pipeline("text2text-generation", model="google/flan-t5-base")
+    except Exception as e:
+        st.error("❌ Erro ao carregar modelo de IA. Verifique sua conexão ou tente novamente mais tarde.")
+        raise e
 
 def show_form():
     st.title("🩺 Formulário de Consulta Oncológica")
 
-    st.markdown("**Responda ao formulário com informações do paciente.**")
+    st.markdown("Preencha o formulário abaixo para avaliar riscos potenciais de câncer e obter recomendações preventivas:")
 
     idade = st.selectbox("Idade", ["<30", "30-45", "46-60", ">60"])
     genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"])
@@ -29,16 +32,17 @@ def show_form():
         """
 
         prompt = f"""
-        Com base neste perfil do paciente, avalie o risco de câncer mais provável e recomende estratégias de prevenção alimentar e de estilo de vida.
-        Responda em português e de forma objetiva. Perfil: {respostas}
+        Com base neste perfil do paciente, avalie em português o risco mais provável de desenvolvimento de câncer e recomende estratégias preventivas nutricionais e comportamentais.
+        Perfil: {respostas}
         """
 
         st.subheader("📄 Resultado da Consulta Oncológica")
+
         try:
             modelo = load_chat_model()
-            resultado = modelo(prompt, max_new_tokens=300)[0]['generated_text']
+            resultado = modelo(prompt, max_new_tokens=256)[0]['generated_text']
             st.success("✅ Consulta processada com sucesso.")
             st.markdown(f"**📋 Diagnóstico e Recomendação:**\n\n{resultado}")
         except Exception as e:
-            st.error("❌ Ocorreu um erro ao processar a consulta. Por favor, tente novamente.")
+            st.error("❌ Não foi possível gerar a recomendação da IA no momento.")
             st.exception(e)
