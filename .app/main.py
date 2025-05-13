@@ -2,7 +2,7 @@ import streamlit as st
 from model import setup_model
 from food_detection import process_uploaded_images
 from health_analysis import estimate_lifespan_gain, calculate_cancer_risk
-from recommendation import recommend_diet
+from recommendation import recommend_diet, gerar_matriz_dieta
 
 st.set_page_config(page_title="Análise Nutricional de Risco Oncológico", layout="wide")
 st.title("🧬 Análise Nutricional de Risco Oncológico")
@@ -10,24 +10,20 @@ st.title("🧬 Análise Nutricional de Risco Oncológico")
 st.markdown("""
 Faça o upload de até 30 imagens de pratos de comida para:
 
-- Identificar os ingredientes em cada prato
-- Calcular a composição percentual dos alimentos no prato
-- Estimar o risco relativo de câncer baseado na dieta
-- Obter recomendações alimentares personalizadas para redução de risco
-- Avaliar o impacto potencial sobre a expectativa de vida
+- Identificar os ingredientes com precisão
+- Calcular a composição alimentar percentual
+- Estimar o risco relativo de câncer
+- Gerar recomendações personalizadas
+- Propor uma dieta semanal alternativa
 """)
 
-uploaded_files = st.file_uploader(
-    "📤 Envie as imagens dos pratos (até 30 imagens)", 
-    type=["jpg", "jpeg", "png"], 
-    accept_multiple_files=True
-)
+uploaded_files = st.file_uploader("📤 Envie até 30 imagens de pratos (jpg/png)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
 if uploaded_files:
     if len(uploaded_files) > 30:
-        st.warning("Limite máximo de 30 imagens excedido.")
+        st.warning("Limite de 30 imagens excedido.")
     else:
-        with st.spinner("🔎 Processando as imagens..."):
+        with st.spinner("🔎 Processando..."):
             model = setup_model()
             food_compositions = process_uploaded_images(uploaded_files, model)
 
@@ -35,29 +31,31 @@ if uploaded_files:
         cols = st.columns(min(len(food_compositions), 5))
         for idx, comp in enumerate(food_compositions):
             with cols[idx % len(cols)]:
-                st.image(comp["image"], caption=comp["filename"], use_column_width=True)
+                st.image(comp["image"], caption=comp["filename"], use_container_width=True)
 
-        st.subheader("📊 Ingredientes Identificados nos Pratos")
-        all_ingredientes = []
+        st.subheader("📊 Ingredientes Detectados")
+        alimentos_gerais = []
         for comp in food_compositions:
-            st.image(comp["image"], caption=comp["filename"], use_container_width=True)
             st.markdown("**Ingredientes identificados:**")
-            for food, percent, score in comp["foods"]:
-                st.write(f"- {food} | {percent:.1%} do prato | Confiança: {score:.2f}")
-                all_ingredientes.append(food)
-            risk = calculate_cancer_risk(comp["foods"])
-            st.markdown(f"**Risco estimado de câncer para este prato:** `{risk:.2f}`")
+            for alimento, percentual, score in comp["foods"]:
+                st.write(f"- {alimento} | {percentual:.1%} do prato | Confiança: {score:.2f}")
+                alimentos_gerais.append(alimento)
+            risco = calculate_cancer_risk(comp["foods"])
+            st.markdown(f"**Risco estimado de câncer para este prato:** `{risco:.2f}`")
 
-        st.subheader("🧬 Avaliação Geral da Dieta")
-        gain_years, avg_risk = estimate_lifespan_gain(food_compositions)
-        st.write(f"**Risco médio de câncer baseado na dieta:** `{avg_risk:.2f}`")
-        st.write(f"**Potencial de aumento na expectativa de vida com dieta otimizada:** `{gain_years} anos`")
+        st.subheader("📈 Avaliação Geral da Dieta")
+        anos, risco_medio = estimate_lifespan_gain(food_compositions)
+        st.write(f"**Risco médio estimado:** `{risco_medio:.2f}`")
+        st.write(f"**Ganho estimado na expectativa de vida:** `{anos} anos`")
 
-        st.subheader("🥗 Recomendações Alimentares Personalizadas")
-        suggestions = recommend_diet(food_compositions)
-        if suggestions:
-            for category, rec in suggestions.items():
-                st.markdown(f"- ⚠️ Categoria frequente: **{category}** ({rec['current_count']} ocorrências)")
-                st.markdown(f"  → Substituir por: {', '.join(rec['suggested_replacements'])}")
+        st.subheader("🧾 Recomendações de Substituição")
+        sugestoes = recommend_diet(food_compositions)
+        if sugestoes:
+            for categoria, rec in sugestoes.items():
+                st.markdown(f"- Substituir **{categoria}** por: {', '.join(rec['suggested_replacements'])}")
         else:
-            st.success("Nenhuma recomendação crítica. A dieta parece saudável! 🎉")
+            st.success("Nenhum alimento de risco alto identificado!")
+
+        st.subheader("📅 Dieta Semanal Sugerida")
+        matriz = gerar_matriz_dieta(alimentos_gerais)
+        st.dataframe(matriz, use_container_width=True)
