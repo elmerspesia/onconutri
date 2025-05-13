@@ -1,17 +1,17 @@
 import streamlit as st
 from transformers import pipeline
+import re
 
+# Cacheia o carregamento do modelo de IA
 @st.cache_resource
 def load_chat_model():
     return pipeline("text2text-generation", model="google/flan-t5-base")
 
-@st.cache_resource
-def load_translator():
-    return pipeline("translation", model="Helsinki-NLP/opus-mt-en-pt")
-
+# Função principal do formulário de consulta médica oncológica
 def show_form():
     st.title("🩺 Formulário de Consulta Oncológica")
 
+    # Coleta de informações do paciente
     idade = st.selectbox("Idade", ["<30", "30-45", "46-60", ">60"])
     genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"])
     tabagismo = st.selectbox("É fumante?", ["Nunca fumou", "Fumante ocasional", "Fumante regular", "Ex-fumante"])
@@ -22,16 +22,21 @@ def show_form():
     exposicao = st.selectbox("Exposição a toxinas (agrotóxicos, radiação)", ["Nenhuma", "Moderada", "Alta"])
     estresse = st.selectbox("Nível de estresse diário", ["Baixo", "Médio", "Alto"])
 
+    # Botão para processar a IA
     if st.button("🔍 Processar Consulta"):
         with st.spinner("Processando avaliação com IA..."):
 
-            # Engenharia de Prompt com CAG + DAG + RAG
-            contexto_medico = (
-                "Você é um assistente médico especializado em oncologia preventiva. "
-                "Analise o perfil abaixo de acordo com estudos da OMS, INCA, PubMed e NCCN."
+            # Prompt em português nativo com Engenharia de Prompt para CAG + RAG
+            contexto = (
+                "Você é um médico oncologista com conhecimento em guidelines da OMS, INCA, PubMed e literatura científica. "
+                "Analise o seguinte perfil de paciente e forneça:\n"
+                "- O(s) tipo(s) mais provável(eis) de câncer com base nos fatores de risco\n"
+                "- Um score de propensão oncológica de 0.00 a 1.00\n"
+                "- Recomendações preventivas baseadas em evidências\n"
+                "- Diagnóstico e orientação clínica em linguagem acessível\n\n"
             )
 
-            dados_struct = f"""
+            respostas = f"""
             Idade: {idade}
             Gênero: {genero}
             Tabagismo: {tabagismo}
@@ -43,34 +48,22 @@ def show_form():
             Estresse: {estresse}
             """
 
-            prompt = (
-                f"{contexto_medico}\n\n"
-                f"Paciente:\n{dados_struct}\n\n"
-                "Avalie em português:\n"
-                "- O tipo mais provável de câncer com base nesse perfil\n"
-                "- Um score numérico de propensão ao câncer (de 0.00 a 1.00)\n"
-                "- Recomendações detalhadas de hábitos que reduzam esse risco\n"
-                "- Diagnóstico preventivo completo\n\n"
-                "Responda apenas em português, com linguagem médica clara e objetiva."
-            )
+            prompt = contexto + "Perfil do paciente:\n" + respostas
 
             try:
                 modelo = load_chat_model()
-                saida = modelo(prompt, max_new_tokens=512)[0]['generated_text']
+                resultado = modelo(prompt, max_new_tokens=512)[0]['generated_text']
 
-                tradutor = load_translator()
-                traducao = tradutor(saida, max_length=512)[0]['translation_text']
-
-                # Score extraído por regex ou heurística (ajustável)
-                import re
-                score_match = re.search(r'([0-1]\.\d{1,2})', traducao)
+                # Tenta extrair o score do texto
+                score_match = re.search(r'([0-1]\.\d{1,2})', resultado)
                 score = float(score_match.group(1)) if score_match else 0.0
 
-                st.success("Consulta processada com sucesso.")
-                st.subheader("📄 Resultado da Consulta Oncológica")
-                st.markdown(f"**📊 Score de propensão ao câncer:** `{score:.2f}`")
-                st.markdown(f"**🩺 Diagnóstico e Recomendação:**\n\n{traducao}")
+                # Exibição
+                st.success("✅ Consulta processada com sucesso.")
+                st.subheader("📝 Resultado da Consulta Oncológica")
+                st.markdown(f"**📊 Score de Propensão ao Câncer:** `{score:.2f}`")
+                st.markdown(f"**📄 Diagnóstico e Recomendação:**\n\n{resultado}")
 
             except Exception as e:
-                st.error("❌ Erro ao processar a consulta.")
+                st.error("❌ Erro ao processar a IA.")
                 st.exception(e)
