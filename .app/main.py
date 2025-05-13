@@ -2,6 +2,10 @@ import streamlit as st
 from PIL import Image
 from io import BytesIO
 import pandas as pd
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 from food_detection import identificar_alimentos
 from risco_alimentos import calcular_score, classificar_risco
 from recommendation import gerar_dieta, mapa_beneficios
