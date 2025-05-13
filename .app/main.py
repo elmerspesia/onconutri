@@ -54,8 +54,8 @@ if menu == "Consulta Oncológica":
 
 # Página: Bot interativo
 if menu == "Bot":
-    from chatbot import show_bot
-    show_bot()
+    from bot_nina import bot_nina_ui
+    bot_nina_ui()
     st.stop()
 
 # Página: Tela Principal
