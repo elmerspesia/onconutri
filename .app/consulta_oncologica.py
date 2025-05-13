@@ -1,69 +1,70 @@
 import streamlit as st
 from transformers import pipeline
-import re
 
-# Cacheia o carregamento do modelo de IA
 @st.cache_resource
-def load_chat_model():
+def load_generator():
     return pipeline("text2text-generation", model="google/flan-t5-base")
 
-# Função principal do formulário de consulta médica oncológica
+def gerar_diagnostico_ia(prompt):
+    generator = load_generator()
+    resposta = generator(prompt, max_length=512, do_sample=True)
+    return resposta[0]['generated_text']
+
+def montar_prompt(dados):
+    prompt = f"""
+Você é um médico oncologista especialista em prevenção de câncer. Analise o perfil do paciente abaixo com base em diretrizes científicas da OMS, INCA e literatura médica.
+
+Perfil do paciente:
+- Frequência alimentar: {dados['frequencia_alimentar']}
+- Histórico familiar de câncer: {dados['historico_familiar']}
+- Tipo de dieta: {dados['tipo_dieta']}
+- Atividade física: {dados['atividade_fisica']}
+- Exposição a toxinas: {dados['exposicao_toxinas']}
+- Estresse diário: {dados['nivel_estresse']}
+
+Com base nessas informações:
+1. Calcule um score de risco de câncer (de 0.00 a 1.00).
+2. Identifique possíveis tipos de câncer de risco elevado.
+3. Forneça um diagnóstico preventivo e recomendações de mudança de estilo de vida para reduzir o risco.
+Responda em português claro e acessível.
+"""
+    return prompt
+
 def show_form():
-    st.title("🩺 Formulário de Consulta Oncológica")
+    st.header("🧬 Formulário de Consulta")
 
-    # Coleta de informações do paciente
-    idade = st.selectbox("Idade", ["<30", "30-45", "46-60", ">60"])
-    genero = st.selectbox("Gênero", ["Masculino", "Feminino", "Outro"])
-    tabagismo = st.selectbox("É fumante?", ["Nunca fumou", "Fumante ocasional", "Fumante regular", "Ex-fumante"])
-    alcool = st.selectbox("Consumo de álcool", ["Nunca", "Social", "Frequente", "Abuso"])
-    historico_familiar = st.selectbox("Histórico familiar de câncer?", ["Nenhum", "Sim - parentes de 1º grau", "Sim - parentes distantes"])
-    dieta = st.selectbox("Tipo de dieta predominante", ["Rica em vegetais e fibras", "Mista com carnes processadas", "Industrializada", "Vegetariana"])
-    atividade_fisica = st.selectbox("Frequência de atividade física", ["Sedentário", "1-2x por semana", "3+ vezes/semana"])
-    exposicao = st.selectbox("Exposição a toxinas (agrotóxicos, radiação)", ["Nenhuma", "Moderada", "Alta"])
-    estresse = st.selectbox("Nível de estresse diário", ["Baixo", "Médio", "Alto"])
+    frequencia_alimentar = st.selectbox("Frequência de alimentação processada:", ["Alta", "Média", "Baixa"])
+    historico_familiar = st.selectbox("Histórico familiar de câncer:", ["Sim - parentes de 1º grau", "Sim - parentes de 2º grau", "Não"])
+    tipo_dieta = st.selectbox("Tipo de dieta predominante", ["Industrializada", "Balanceada", "Vegetariana", "Outros"])
+    atividade_fisica = st.selectbox("Frequência de atividade física", ["Sedentário", "Moderado", "Ativo"])
+    exposicao_toxinas = st.selectbox("Exposição a toxinas (agrotóxicos, radiação)", ["Nenhuma", "Moderada", "Alta"])
+    nivel_estresse = st.selectbox("Nível de estresse diário", ["Baixo", "Médio", "Alto"])
 
-    # Botão para processar a IA
     if st.button("🔍 Processar Consulta"):
-        with st.spinner("Processando avaliação com IA..."):
+        with st.spinner("Processando consulta..."):
+            dados = {
+                "frequencia_alimentar": frequencia_alimentar,
+                "historico_familiar": historico_familiar,
+                "tipo_dieta": tipo_dieta,
+                "atividade_fisica": atividade_fisica,
+                "exposicao_toxinas": exposicao_toxinas,
+                "nivel_estresse": nivel_estresse
+            }
+            prompt = montar_prompt(dados)
+            resposta = gerar_diagnostico_ia(prompt)
 
-            # Prompt em português nativo com Engenharia de Prompt para CAG + RAG
-            contexto = (
-                "Você é um médico oncologista com conhecimento em guidelines da OMS, INCA, PubMed e literatura científica. "
-                "Analise o seguinte perfil de paciente e forneça:\n"
-                "- O(s) tipo(s) mais provável(eis) de câncer com base nos fatores de risco\n"
-                "- Um score de propensão oncológica de 0.00 a 1.00\n"
-                "- Recomendações preventivas baseadas em evidências\n"
-                "- Diagnóstico e orientação clínica em linguagem acessível\n\n"
-            )
+            st.success("✅ Consulta processada com sucesso.")
 
-            respostas = f"""
-            Idade: {idade}
-            Gênero: {genero}
-            Tabagismo: {tabagismo}
-            Álcool: {alcool}
-            Histórico familiar: {historico_familiar}
-            Dieta: {dieta}
-            Atividade física: {atividade_fisica}
-            Exposição a toxinas: {exposicao}
-            Estresse: {estresse}
-            """
+            st.subheader("📝 Resultado da Consulta Oncológica")
 
-            prompt = contexto + "Perfil do paciente:\n" + respostas
+            # Score fictício extraído da IA (seria ideal extrair com expressão regular)
+            score = "0.00"
+            if "0." in resposta or "1.0" in resposta:
+                import re
+                encontrados = re.findall(r"\b0\.\d{2}|\b1\.00", resposta)
+                if encontrados:
+                    score = encontrados[0]
 
-            try:
-                modelo = load_chat_model()
-                resultado = modelo(prompt, max_new_tokens=512)[0]['generated_text']
-
-                # Tenta extrair o score do texto
-                score_match = re.search(r'([0-1]\.\d{1,2})', resultado)
-                score = float(score_match.group(1)) if score_match else 0.0
-
-                # Exibição
-                st.success("✅ Consulta processada com sucesso.")
-                st.subheader("📝 Resultado da Consulta Oncológica")
-                st.markdown(f"**📊 Score de Propensão ao Câncer:** `{score:.2f}`")
-                st.markdown(f"**📄 Diagnóstico e Recomendação:**\n\n{resultado}")
-
-            except Exception as e:
-                st.error("❌ Erro ao processar a IA.")
-                st.exception(e)
+            st.markdown(f"📊 **Score de Propensão ao Câncer:** `{score}`")
+            st.markdown("📄 **Diagnóstico e Recomendação:**")
+            st.write(resposta)
