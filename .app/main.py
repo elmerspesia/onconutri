@@ -105,4 +105,17 @@ if uploaded_files:
 
         st.subheader("📅 Dieta Semanal Sugerida")
         matriz = gerar_matriz_dieta(alimentos_gerais)
+
+        # ✅ Mapa mental dos benefícios da dieta saudável
+        st.subheader("🧠 Benefícios da Dieta Recomendada")
+        from graphviz import Digraph
+        g = Digraph()
+        g.node("Dieta Saudável")
+        g.edge("Dieta Saudável", "Redução de inflamações")
+        g.edge("Dieta Saudável", "Melhoria da imunidade")
+        g.edge("Dieta Saudável", "Redução do risco de câncer")
+        g.edge("Dieta Saudável", "Controle de peso")
+        g.edge("Dieta Saudável", "Saúde cardiovascular")
+        st.graphviz_chart(g)
+
         st.dataframe(matriz, use_container_width=True)
